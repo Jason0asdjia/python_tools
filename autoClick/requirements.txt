@@ -1,5 +1,4 @@
-pywin32==223
-PyAutoGUI==0.9.53
-psutil==5.6.3
+psutil==5.8.0
 keyboard==0.13.5
-32gui==221.6
+pyautogui==0.9.53
+win32gui==221.6
