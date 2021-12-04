@@ -1,15 +1,14 @@
+import httpx
+import parsel
+import requests
+import asyncio
 import os
 import sys
-
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import asyncio
-import requests
-import parsel
-import httpx
-
-from lxml import etree
+#
 from tools.headers import GetCookies, GetUserAgent
 from rich.progress import track
+from lxml import etree
 
 HEADERS = {}
 HEADERS['User-Agent'] = GetUserAgent()
@@ -19,7 +18,7 @@ BASEURL = "https://www.bqktxt.com"
 """
 获取小说章节链接
 """
-
+dic = {}
 
 async def get_link(url):
     req = requests.get(url, headers=HEADERS)
@@ -36,8 +35,9 @@ async def get_link(url):
         task = []
         for link, name in name_link:
             task.append(get_text(client, name, link))
-        # await asyncio.wait(task)
-        await asyncio.gather(*task)
+        await asyncio.wait(task)
+        # await asyncio.gather(*task)
+    save_text(name_list[12:])
 
 
 """
@@ -48,34 +48,48 @@ httpx发送异步请求
 
 async def get_text(client, name, link):
     # async with httpx.AsyncClient() as client:
-    req = await client.get(link, headers=HEADERS)
+    req = await client.get(link, headers=HEADERS, timeout=None)
+    # print(req)
     html = etree.HTML(req.text)
     text = html.xpath('//*[@id="content"]/text()')
-    await save_text(name, text[:-2])
+    await save_text_dic(name, text[:-2])
+
+
+"""
+写入文件->字典做临时缓存
+"""
+async def save_text_dic(name, texts):
+    # temp = ""
+    # # dic[name] = texts
+    # for text in texts:
+    #     temp += text + "\n\n"
+    # TODO:百分比显示进度
+    dic[name] = texts
+    # print(f'正在载入{name}')
+
 
 
 """
 写入文件
-TODO：存入文件乱序
-    加入一个“缓存”队列，使用TODO:多线程取值
-    使用标识，比当前表示大一，写入
-    
-当前处理方式：对存入的各章节文件在进行读取，同时进行排序合并为一个文件
+将已经写入dic缓存的text按照爬取的name_list顺序写入
 """
 
 
-async def save_text(name, text):
-    #TODO:文件目录更方便由用户创建
-    path = "./python_tools/crawler/novel-伏天氏"
+def save_text(name_list):
+    # TODO:文件目录更方便由用户创建
+    path = "./python_tools/crawler/novel"
     if not os.path.exists(path):
         os.mkdir(path)
-    f = open(f'{path}/{name}.txt', 'a', encoding='utf-8')
+    f = open(f'{path}/伏天氏.txt', 'a', encoding='utf-8')
     # async with open(f"./result/{name}.txt", 'w', encoding="utf-8") as f:
-    for texts in track(text):
-        f.write(texts)
+    for name in track(name_list):
+        f.write(name)
         f.write('\n\n')
-        print(f'正在爬取{name}')
-
+        for text in dic[name]:
+            # print(text)
+            f.write(text)
+            f.write('\n\n')
+        f.write('\n')
 
 if __name__ == '__main__':
     url = 'https://www.bqktxt.com/0_243/'
