@@ -37,6 +37,7 @@ async def get_link(url):
             task.append(get_text(client, name, link))
         await asyncio.wait(task)
         # await asyncio.gather(*task)
+    # client.close()
     save_text(name_list[12:])
 
 
